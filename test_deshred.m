@@ -8,9 +8,8 @@ im_fig = figure();
 errors = zeros(test_count,1);
 for i=1:test_count,
     fprintf('.');
-    I_shred = shred_im(I_true,shred_count,min_shred);
-    [ shred_counts sc_diffs sc_gpdfs shred_mask match_probs I ] = ...
-        deshred_new( I_shred, shred_count+2 );
+    I_shred = shred_im(I_true, shred_count, min_shred);
+    I = deshred_new(I_shred, shred_count+2);
     if (numel(I_true) == numel(I))
         errors(i) = sum((I_true(:) - I(:)).^2);
     else

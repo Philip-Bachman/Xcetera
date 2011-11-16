@@ -1,5 +1,4 @@
-function [ shred_counts sc_diffs sc_gpdfs shred_mask match_probs I ] = ...
-         deshred_new( I_shred, opt_shred_count )
+function [ I ] = deshred_new( I_shred, opt_shred_count )
 % Deshred the vertically shredded image in the matrix I_shred.
 I_cols = size(I_shred,2);
 I_rows = size(I_shred,1);
