@@ -88,10 +88,15 @@ shred_mask = logical(shred_mask);
 match_probs = zeros(size(shred_mask,1));
 for i=1:size(shred_mask,1),
     for j=1:size(shred_mask,1),
-        shred = cat(2,Id(:,shred_mask(i,:),:),Id(:,shred_mask(j,:),:));
+        shred_left = Id(:,shred_mask(i,:),:);
+        size_left = size(shred_left,2);
+        shred_right = Id(:,shred_mask(j,:),:);
         diffs = cat(1,raw_diffs(shred_mask(i,:)),raw_diffs(shred_mask(j,:)));
-        left_size = sum(shred_mask(i,:));
-        match_probs(i,j) = match_prob(shred,diffs,left_size,cds_mu,cds_sigma);
+        join_diff = squeeze(shred_right(:,1,:) - shred_left(:,end,:));
+        diffs(size_left+1) = sum(sqrt(sum(join_diff.^2,2))) / size(shred_left,1);
+        diffs(1) = mean(diffs(2:4));
+        diffs = diffs ./ conv(diffs,normpdf(-7:7,0.0,2.0),'same');
+        match_probs(i,j) = normpdf(diffs(size_left+1),cds_mu,cds_sigma);
     end
 end
 
@@ -152,19 +157,6 @@ I = [];
 for i=1:numel(final_order),
     I = cat(2,I,I_shred(:,shred_mask(final_order(i),:),:));
 end
-
-return
-
-end
-
-function [ prob ] = match_prob(shred, diffs, left_size, cds_mu, cds_sigma)
-% Compute the match prob for matching the right edge of shred_left to the left
-% edge of shred_right.
-join_diff = squeeze(shred(:,left_size+1,:) - shred(:,left_size,:));
-diffs(left_size+1) = sum(sqrt(sum(join_diff.^2,2))) / size(shred,1);
-diffs(1) = mean(diffs(2:4));
-diffs = diffs ./ conv(diffs,normpdf(-7:7,0.0,2.0),'same');
-prob = normpdf(diffs(left_size+1),cds_mu,cds_sigma);
 
 return
 
