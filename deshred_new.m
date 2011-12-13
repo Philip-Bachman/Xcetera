@@ -127,19 +127,19 @@ if (sum(abs(order_ltr - order_rtl)) > 0.5)
         % QUICK N DIRTY: CHECK EACH ORDER, KEEP BEST ONE
         I_ltr = [];
         for i=1:numel(order_ltr),
-            I = cat(2,I,I_shred(:,shred_mask(order_ltr(i),:),:));
+            I_ltr = cat(2,I_ltr,I_shred(:,shred_mask(order_ltr(i),:),:));
         end
         diff_ltr = 0;
         for i=2:size(I_ltr,2),
-            diff_ltr = diff_ltr + sum(sum(sum((I_ltr(:,i,:)-I_ltr(:,i-1)).^2)));
+            diff_ltr = diff_ltr + sum(sum(sum((I_ltr(:,i,:)-I_ltr(:,i-1,:)).^2)));
         end
         I_rtl = [];
         for i=1:numel(order_rtl),
-            I = cat(2,I,I_shred(:,shred_mask(order_rtl(i),:),:));
+            I_rtl = cat(2,I_rtl,I_shred(:,shred_mask(order_rtl(i),:),:));
         end
         diff_rtl = 0;
         for i=2:size(I_rtl,2),
-            diff_rtl = diff_rtl + sum(sum(sum((I_rtl(:,i,:)-I_rtl(:,i-1)).^2)));
+            diff_rtl = diff_rtl + sum(sum(sum((I_rtl(:,i,:)-I_rtl(:,i-1,:)).^2)));
         end
         if (diff_ltr <= diff_rtl)
             final_order = order_ltr;
