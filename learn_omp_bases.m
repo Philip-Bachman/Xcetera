@@ -1,14 +1,14 @@
 function [ A ] = learn_omp_bases(...
-    X, basis_count, omp_num, step, round_count, l1_bases, Ai )
+    X, basis_count, omp_num, batch_size, round_count, step, Ai )
 % Learn linear bases for the given patches, using orthogonal matching pursuit.
 %
 % Parameters:
 %   X: observations to use in basis learning (obs_count x obs_dim)
 %   basis_count: number of bases to learn
 %   omp_num: number of bases with which to represent each observation
-%   step: step size for basis gradient descent
 %   round_count: number of update rounds to perform
-%   l1_bases: l1(ish) regularization weight to apply to bases
+%   batch_size: size of batches to use for each dictionary update round
+%   step: step size for basis gradient descent
 %   Ai: optional initial set of bases (obs_dim x basis_count)
 % Outputs:
 %   A: learned set of bases (obs_dim x basis_count)
@@ -19,16 +19,19 @@ if exist('Ai','var')
         error('learn_omp_bases: mismatched initial basis size.\n');
     end
     A = Ai;
+    A = bsxfun(@rdivide, A, sqrt(sum(A.^2) + 1e-8));
 else
+    % Generate a set of unit-norm random initial bases
     A = randn(obs_dim,basis_count);
-    A = bsxfun(@rdivide, A, sqrt(sum(A.^2) + 1e-5));
+    A = bsxfun(@rdivide, A, sqrt(sum(A.^2) + 1e-8));
 end
 
 % Do round_count alternations between OMP encoding and basis updating
 for r=1:round_count,
     fprintf('ROUND %d\n',r);
-    B = omp_encode(X, A, omp_num);
-    [ A obj ] = omp_basis_update(X, A, B, l1_bases, step);
+    Xb = X(randsample(size(X,1),batch_size),:);
+    B = omp_encode(Xb, A, omp_num);
+    [A obj] = omp_basis_update(Xb, A, B, step);
 end
 
 return
@@ -77,7 +80,7 @@ fprintf('  }\n');
 return
 end
 
-function [ A_new obj ] = omp_basis_update( X, A, B, lam_l1, step )
+function [ A_new obj ] = omp_basis_update( X, A, B, step )
 % Update the bases in A, given the encoding of the observations in X according
 % to the weightts in B. Use gradient descent step size "step".
 %
@@ -85,7 +88,6 @@ function [ A_new obj ] = omp_basis_update( X, A, B, lam_l1, step )
 %   X: observations that were encoded (obs_count x obs_dim)
 %   A: bases used in the encoding (obs_dim x basis_count)
 %   B: encoding weights (obs_count x basis_count)
-%   l1_bases: L1(ish) regularization weight to apply to bases
 %   step: gradient descent step size
 % Outputs:
 %   A: updated bases
@@ -101,9 +103,9 @@ Xr = Xh - X;
 obj = sum(Xr(:).^2) / obs_var;
 fprintf('    pre_obj: %.6f\n', obj);
 
-A_grad = ((Xr' * B) ./ obs_count) + ((A ./ sqrt(A.^2 + 1e-5)) .* lam_l1);
+A_grad = ((Xr' * B) ./ obs_count);
 A_new = A - (A_grad .* step);
-A_new = bsxfun(@rdivide,A_new,sqrt(sum(A_new.^2) + 1e-5));
+A_new = bsxfun(@rdivide,A_new,sqrt(sum(A_new.^2) + 1e-8));
 Xh = B * A_new';
 obj = sum((X(:) - Xh(:)).^2) / obs_var;
 fprintf('    post_obj: %.6f\n', obj);
